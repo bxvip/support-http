@@ -1,5 +1,5 @@
 
-def isGithubRepo = false
+def isGithubRepo = true
 
 if(isGithubRepo){
     buildscript {
