@@ -1,0 +1,13 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+apply from: '../lib-config-gradle/buildLibConfig.gradle'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    provided httpLibs
+    provided "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    provided project(':lib-db')
+    provided newSupportV4AndRecyclerViewAar
+    provided repluginplugin
+}
