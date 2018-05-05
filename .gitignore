@@ -1,4 +1,14 @@
 *.iml
-*.log
-/.git
+.gradle
+/local.properties
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+.DS_Store
 /build
+/captures
+.externalNativeBuild
+
+/temp
+/apk
+/libs-pro-local-repo

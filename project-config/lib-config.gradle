@@ -1,0 +1,40 @@
+ext {
+
+    GROUP = "co.bxvip.android.lib"
+    localRepoPath = "file://${projectDir}/libs-pro-local-repo"
+    isLocalReop = true
+
+    libModelConfigs = [
+            "android-support"       : [
+                    libName       : "android-support",
+                    libVersionName: "26.0.2.5",
+                    libType       : "jar"
+            ],
+            "lib-ui-tocleanmvp"     : [
+                    libName       : "lib-ui-tocleanmvp",
+                    libVersionName: "1.0.1",
+                    libType       : "jar"
+            ],
+
+            "lib-http"              : [
+                    libName       : "lib-http",
+                    libVersionName: "1.0.5",
+                    libType       : "jar"
+            ],
+            "lib-ui-scrollablepanel": [
+                    libName       : "lib-ui-scrollablepanel",
+                    libVersionName: "1.0.1",
+                    libType       : "aar"
+            ],
+            "lib-ui-widget"         : [
+                    libName       : "lib-ui-widget",
+                    libVersionName: "1.0.1",
+                    libType       : "aar"
+            ],
+            "lib-update"            : [
+                    libName       : "lib-update",
+                    libVersionName: "1.0.1",
+                    libType       : "aar"
+            ]
+    ]
+}

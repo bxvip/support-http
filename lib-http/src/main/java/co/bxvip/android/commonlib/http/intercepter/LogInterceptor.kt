@@ -4,7 +4,7 @@ import android.util.Log
 
 import java.io.IOException
 
-//import co.bxvip.android.commonlib.http.BuildConfig
+import co.bxvip.android.commonlib.http.BuildConfig
 import okhttp3.FormBody
 import okhttp3.Interceptor
 
@@ -24,14 +24,14 @@ class LogInterceptor : Interceptor {
         val duration = endTime - startTime
         val mediaType = response.body()!!.contentType()
         val content = response.body()!!.string()
-        Log.d(TAG, "\n")
-        Log.d(TAG, "----------Start----------------")
-//        var requestS = request.toString()
-//        val tag = requestS.indexOf("tag")
-//        if (tag != -1) {
-//            requestS = requestS.substring(0, tag - 2) + "}"
-//        }
-//        if (BuildConfig.DEBUG) Log.d(TAG, "| $requestS")
+        if (BuildConfig.DEBUG) Log.d(TAG, "\n")
+        if (BuildConfig.DEBUG) Log.d(TAG, "----------Start----------------")
+        var requestS = request.toString()
+        val tag = requestS.indexOf("tag")
+        if (tag != -1) {
+            requestS = requestS.substring(0, tag - 2) + "}"
+        }
+        if (BuildConfig.DEBUG) Log.d(TAG, "| $requestS")
         val method = request.method()
         if ("POST" == method) {
             val sb = StringBuilder()
@@ -41,10 +41,10 @@ class LogInterceptor : Interceptor {
                     sb.append(body!!.encodedName(i)).append("=").append(body.encodedValue(i)).append(",")
                 }
                 if (sb.length != 0) sb.delete(sb.length - 1, sb.length)
-                //if (BuildConfig.DEBUG) Log.d(TAG, "| RequestParams:{" + sb.toString() + "}")
+                if (BuildConfig.DEBUG) Log.d(TAG, "| RequestParams:{" + sb.toString() + "}")
             }
         }
-//        if (BuildConfig.DEBUG) Log.d(TAG, "| Response:$content")
+        if (BuildConfig.DEBUG) Log.d(TAG, "| Response:$content")
         Log.d(TAG, "----------End:" + duration + "毫秒----------")
         return response.newBuilder()
                 .body(okhttp3.ResponseBody.create(mediaType, content))

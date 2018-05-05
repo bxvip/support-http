@@ -1,0 +1,64 @@
+ext {
+
+    buildToolsVersion = '26.0.2'
+    compileSdkVersion = 26
+    minSdkVersion = 14
+    targetSdkVersion = 26
+
+    espressoVersion = '3.0.1'
+
+    zxingVersion = '3.3.0'
+
+    anko_version = '0.10.5'
+
+    replugin_version = '2.2.4'
+
+    filedownload_version = '0.0.2'
+
+    eventbusVersion = '3.0.0'
+    glideVersion = '3.7.0'
+    okhttp_version = '3.10.0'
+    gsonVersion = '2.8.2'
+
+    // re plugin
+    repluginplugin = "com.qihoo360.replugin:replugin-plugin-lib:$replugin_version"
+
+
+    ormLiteVersion = '5.1'
+    ormLite = [
+            ormLiteCore   : "com.j256.ormlite:ormlite-core:$ormLiteVersion",
+            ormLiteAndroid: "com.j256.ormlite:ormlite-android:$ormLiteVersion",
+    ]
+
+
+    okhttp = "com.squareup.okhttp3:okhttp:$okhttp_version"
+    gson = "com.google.code.gson:gson:$gsonVersion"
+    // http 网络
+    http = [
+            gson  : gson,
+            okhttp: okhttp
+    ]
+
+    // zxing
+    zxing = "com.google.zxing:core:$zxingVersion"
+
+    // anko
+    anko = "org.jetbrains.anko:anko:$anko_version"
+    ankocommons = "org.jetbrains.anko:anko-commons:$anko_version"
+
+    // test
+    testespresso = 'com.android.support.test.espresso:espresso-core:3.0.1'
+    testrunner = 'com.android.support.test:runner:1.0.1'
+    testjunit = 'junit:junit:4.12'
+
+
+    ormLiteLibs = ormLite.values()
+    httpLibs = http.values()
+
+
+    // 图片
+    glide = "com.github.bumptech.glide:glide:$glideVersion"
+    eventbus = "org.greenrobot:eventbus:$eventbusVersion"
+
+    androidJar = "${rootDir.absolutePath}/libs/android.jar"
+}

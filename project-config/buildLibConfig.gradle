@@ -1,0 +1,29 @@
+def modelName = getName()
+
+def modelConfig = libModelConfigs[modelName]
+
+def Debug = isLocalReop ? "debug" : "release"
+
+task "aMake${modelName}Jar"(type: Jar, dependsOn: ['build']) {
+    group = 'jar'
+    destinationDir = file('build/outputs/jar/')
+    baseName = modelConfig['libName'] + "-release"
+    from("build/intermediates/classes/${Debug}")
+    from("build/tmp/kotlin-classes/${Debug}")
+    exclude('**/BuildConfig.class')
+    exclude('**/BuildConfig\$*.class')
+    exclude('**/R.class')
+    exclude('**/R\$*.class')
+    include('**/*.class')
+}
+
+task "aMake${modelName}DebugJar"(type: Jar, dependsOn: ['build']) {
+    group = 'jar'
+    destinationDir = file('build/outputs/jar/')
+    baseName = "${modelConfig['libName']}-debug"
+    from("build/intermediates/classes/${Debug}")
+    from("build/tmp/kotlin-classes/${Debug}")
+    exclude('**/R.class')
+    exclude('**/R\$*.class')
+    include('**/*.class')
+}
