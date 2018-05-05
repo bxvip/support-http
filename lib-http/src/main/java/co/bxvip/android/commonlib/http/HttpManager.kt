@@ -228,12 +228,20 @@ object HttpManager {
                                 }
                             }
                         } else {
-                            // 切换线路
-                            Log.e(TAG, "isSuccessful 为 false,请求失败")
-                            exceptionLog(call, java.lang.Exception("error:code < 200 or code > 300"))
-                            if (_HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
-                            else {
-                                fail("error:code < 200 or code > 300")
+                            if (response.body() != null) {
+                                val string = response.body()!!.string()
+                                if (string.contains("<head>") && string.contains("<body>") && string.contains("<html>")) {
+                                    // 切换线路
+                                    if (BuildConfig.DEBUG)
+                                        Log.e(TAG, "isSuccessful 为 false,请求失败")
+                                    exceptionLog(call, java.lang.Exception("error:code < 200 or code > 300"))
+                                    if (_HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
+                                    else {
+                                        fail("error:code < 200 or code > 300")
+                                    }
+                                }
+                            } else {
+                                fail("请求失败!")
                             }
                         }
                     } catch (e: Exception) {
@@ -322,7 +330,8 @@ object HttpManager {
             if (tag != -1) {
                 requestS = requestS.substring(0, tag - 1) + "}"
             }
-            Log.e(TAG, "| $requestS")
+            if (BuildConfig.DEBUG)
+                Log.e(TAG, "| $requestS")
             val method = request?.method()
             if ("POST" == method) {
                 val sb = StringBuilder()
@@ -332,7 +341,8 @@ object HttpManager {
                         sb.append(body.encodedName(i) + "=" + body.encodedValue(i) + ",")
                     }
                     if (sb.isNotEmpty()) sb.delete(sb.length - 1, sb.length)
-                    Log.e(TAG, "| RequestParams:{" + sb.toString() + "}")
+                    if (BuildConfig.DEBUG)
+                        Log.e(TAG, "| RequestParams:{" + sb.toString() + "}")
                 }
             }
             val headers = request?.headers()
@@ -344,10 +354,12 @@ object HttpManager {
                     }
                 }
                 if (sb.isNotEmpty()) sb.delete(sb.length - 1, sb.length)
-                Log.e(TAG, "| RequestHeaders:{" + sb.toString() + "}")
+                if (BuildConfig.DEBUG)
+                    Log.e(TAG, "| RequestHeaders:{" + sb.toString() + "}")
             }
 
-            Log.e(TAG, "| Response:$response")
+            if (BuildConfig.DEBUG)
+                Log.e(TAG, "| Response:$response")
             Log.e(TAG, "----------End----------------")
         } catch (e: Exception) {
             Log.d(TAG, e.toString())
