@@ -8,8 +8,6 @@ import co.bxvip.android.commonlib.http.intercepter.LogInterceptor
 import co.bxvip.android.commonlib.http.intercepter.RetryIntercepter
 import com.google.gson.Gson
 import okhttp3.*
-import okhttp3.internal.http2.Header
-import org.json.JSONObject
 import java.io.IOException
 
 
