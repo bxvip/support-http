@@ -181,7 +181,7 @@ object HttpManager {
                 override fun onFailure(call: Call?, e: IOException?) {
                     handler?.post {
                         try {
-                            if (_HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
+                            if (_HttpManagerCallBack != null && _HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
                             else {
                                 Log.d(TAG, "网络异常:${e.toString()}")
                                 fail(e.toString())
