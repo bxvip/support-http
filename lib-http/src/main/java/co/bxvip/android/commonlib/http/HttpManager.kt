@@ -3,13 +3,13 @@ package co.bxvip.android.commonlib.http
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import co.bxvip.android.commonlib.http.intercepter.CacheInterceptor
 import co.bxvip.android.commonlib.http.intercepter.LogInterceptor
 import co.bxvip.android.commonlib.http.intercepter.RetryIntercepter
+import co.bxvip.android.commonlib.utils.CommonInit.ctx
 import com.google.gson.Gson
 import okhttp3.*
-import okhttp3.internal.http2.Header
-import org.json.JSONObject
 import java.io.IOException
 
 
@@ -158,6 +158,11 @@ object HttpManager {
                                   secondUrl: String = "",
                                   isCommonParameter: Boolean, headers: Headers?) {
         try {
+            if (!NetworkUtil.isNetworkAvailable(ctx)) {
+                Log.d(TAG, "请连接网络....")
+                Toast.makeText(ctx, "请连接网络....", Toast.LENGTH_SHORT).show()
+                return
+            }
             var responseData = ""
             val request = if (url.isEmpty()) {// POST请求
                 Request.Builder()
