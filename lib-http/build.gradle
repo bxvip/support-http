@@ -20,7 +20,7 @@ dependencies {
     compileOnly files(androidJar)
     compileOnly httpLibs
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    compileOnly 'com.github.bxvip:android-support:26.0.2.7'
+    compileOnly 'com.github.bxvip:android-support:26.0.2.8'
     compileOnly repluginplugin
 }
 

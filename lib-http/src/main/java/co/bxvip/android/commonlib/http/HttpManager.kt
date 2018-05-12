@@ -4,6 +4,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import co.bxvip.android.commonlib.http.ext.KLog
+import co.bxvip.android.commonlib.http.ext.Ku
 import co.bxvip.android.commonlib.http.intercepter.CacheInterceptor
 import co.bxvip.android.commonlib.http.intercepter.LogInterceptor
 import co.bxvip.android.commonlib.http.intercepter.RetryIntercepter
@@ -23,7 +25,7 @@ object HttpManager {
     private var client: OkHttpClient? = null
     var handler: Handler? = null
     private var gson: Gson? = null
-    private var _HttpManagerCallBack: HttpManagerCallback? = null
+    var _HttpManagerCallBack: HttpManagerCallback? = null
 
     init {
         handler = Handler(Looper.getMainLooper())
@@ -192,7 +194,7 @@ object HttpManager {
                                 fail(e.toString())
                             }
                         } catch (e: Exception) {
-                            exceptionLog(call, e)
+                            KLog.exceptionLog(call, e)
                         }
                     }
                 }
@@ -239,7 +241,7 @@ object HttpManager {
                                     // 切换线路
                                     if (BuildConfig.DEBUG)
                                         Log.e(TAG, "isSuccessful 为 false,请求失败")
-                                    exceptionLog(call, java.lang.Exception("error:code < 200 or code > 300"))
+                                    KLog.exceptionLog(call, java.lang.Exception("error:code < 200 or code > 300"))
                                     if (_HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
                                     else {
                                         fail("error:code < 200 or code > 300")
@@ -253,7 +255,7 @@ object HttpManager {
                         handler?.post {
                             fail(e.toString())
                         }
-                        exceptionLog(call, e, responseData)
+                        KLog.exceptionLog(call, e, responseData)
                     }
                 }
             })
@@ -316,112 +318,4 @@ object HttpManager {
         }
         return build.build()
     }
-
-    /**
-     * 异常打印
-     */
-    private fun exceptionLog(call: Call?, e: Exception, response: String = "") {
-        try {
-            val request = call?.request()
-            if (_HttpManagerCallBack?._onFailDoLog != null) {
-                _HttpManagerCallBack?._onFailDoLog!!.invoke(request!!)
-            }
-            Log.e(TAG, "\n")
-            Log.e(TAG, "----------Start----异常-----")
-            Log.e(TAG, "| Thread:${Thread.currentThread().name}")
-            Log.e(TAG, "| Exception:$e")
-            var requestS = request.toString()
-            val tag = requestS.indexOf("tag")
-            if (tag != -1) {
-                requestS = requestS.substring(0, tag - 1) + "}"
-            }
-            if (BuildConfig.DEBUG)
-                Log.e(TAG, "| $requestS")
-            val method = request?.method()
-            if ("POST" == method) {
-                val sb = StringBuilder()
-                if (request.body() is FormBody) {
-                    val body = request.body() as FormBody
-                    for (i in 0 until body.size()) {
-                        sb.append(body.encodedName(i) + "=" + body.encodedValue(i) + ",")
-                    }
-                    if (sb.isNotEmpty()) sb.delete(sb.length - 1, sb.length)
-                    if (BuildConfig.DEBUG)
-                        Log.e(TAG, "| RequestParams:{" + sb.toString() + "}")
-                }
-            }
-            val headers = request?.headers()
-            if (headers != null) {
-                val sb = StringBuilder()
-                for (key in headers.names()) {
-                    if (key != null) {
-                        sb.append(key + "=" + headers.get(key) + ",")
-                    }
-                }
-                if (sb.isNotEmpty()) sb.delete(sb.length - 1, sb.length)
-                if (BuildConfig.DEBUG)
-                    Log.e(TAG, "| RequestHeaders:{" + sb.toString() + "}")
-            }
-
-            if (BuildConfig.DEBUG)
-                Log.e(TAG, "| Response:$response")
-            Log.e(TAG, "----------End----------------")
-        } catch (e: Exception) {
-            Log.d(TAG, e.toString())
-        }
-    }
 }
-
-/**
- * 网络监听需要的回调
- */
-open class HttpManagerCallback {
-    var _onRequestUrl: (() -> String)? = null
-    var _onRequstSecondUrl: (() -> String)? = null
-    var _onFormBodyBefore: (() -> HashMap<String, String>)? = null
-    var _onRequestCommonHeader: (() -> HashMap<String, String>)? = null
-    var _onSwitchUrl: (() -> Boolean)? = null
-    var _onResponse400000: (() -> Unit)? = null
-    var _onResponse450000: ((data: String) -> Unit)? = null
-    var _onFailDoLog: ((request: Request) -> Unit)? = null
-
-    @Synchronized
-    fun onFormBodyBefore(listener: () -> HashMap<String, String>) {
-        _onFormBodyBefore = listener
-    }
-
-    @Synchronized
-    fun onResponse40000(listener: () -> Unit) {
-        _onResponse400000 = listener
-    }
-
-    @Synchronized
-    fun onResponse45000(listener: (data: String) -> Unit) {
-        _onResponse450000 = listener
-    }
-
-    fun onRequestCommonHeaders(listener: () -> HashMap<String, String>) {
-        _onRequestCommonHeader = listener
-    }
-
-    @Synchronized
-    fun onRequestUrl(listener: () -> String) {
-        _onRequestUrl = listener
-    }
-
-    @Synchronized
-    fun onRequestSecondUrl(listener: () -> String) {
-        _onRequstSecondUrl = listener
-    }
-
-    @Synchronized
-    fun onSwitchUrl(listener: () -> Boolean) {
-        _onSwitchUrl = listener
-    }
-
-    @Synchronized
-    fun onFailDoLog(listener: (request: Request) -> Unit) {
-        _onFailDoLog = listener
-    }
-}
-
