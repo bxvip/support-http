@@ -114,6 +114,9 @@ class RequestWrapper<T> {
                         }
                     } catch (e: Exception) {
                         KLog.exceptionLog(call, e)
+                        Ku.getKHander().post {
+                            _fail(e)
+                        }
                     }
                 }
 
