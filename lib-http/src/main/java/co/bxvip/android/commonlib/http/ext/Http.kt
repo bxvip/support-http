@@ -173,6 +173,10 @@ class RequestWrapper<T> {
                                             _fail(Exception("error:code < 200 or code > 300"))
                                         }
                                     }
+                                }else{
+                                    Ku.post {
+                                        _fail(Exception("error:code < 200 or code > 300"))
+                                    }
                                 }
                             } else {
                                 Ku.post {

@@ -246,6 +246,8 @@ object HttpManager {
                                     else {
                                         fail("error:code < 200 or code > 300")
                                     }
+                                }else{
+                                    fail("请求失败!")
                                 }
                             } else {
                                 fail("请求失败!")
