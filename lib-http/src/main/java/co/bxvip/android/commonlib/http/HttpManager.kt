@@ -22,7 +22,6 @@ import java.io.IOException
 object HttpManager {
 
     private val TAG = "HttpManager"
-    private var client: OkHttpClient? = null
     var handler: Handler? = null
     private var gson: Gson? = null
     var _HttpManagerCallBack: HttpManagerCallback? = null
@@ -30,11 +29,6 @@ object HttpManager {
     init {
         handler = Handler(Looper.getMainLooper())
         gson = Gson()
-        client = OkHttpClient.Builder()
-                .addInterceptor(RetryIntercepter(2))//重试
-                .addInterceptor(LogInterceptor())// 请求打印
-                .addInterceptor(CacheInterceptor())
-                .build()
     }
 
     fun setHttpManagerCallBack(init: HttpManagerCallback.() -> Unit) {
@@ -184,7 +178,7 @@ object HttpManager {
                         .headers(commonHeaders(headers))
                         .build()
             }
-            client?.newCall(request)?.enqueue(object : Callback {
+            Ku.getKClient().newCall(request)?.enqueue(object : Callback {
                 override fun onFailure(call: Call?, e: IOException?) {
                     handler?.post {
                         try {
@@ -246,7 +240,7 @@ object HttpManager {
                                     else {
                                         fail("error:code < 200 or code > 300")
                                     }
-                                }else{
+                                } else {
                                     fail("请求失败!")
                                 }
                             } else {

@@ -5,6 +5,9 @@ import android.os.Looper
 import android.util.Log
 import co.bxvip.android.commonlib.http.BuildConfig
 import co.bxvip.android.commonlib.http.HttpManager
+import co.bxvip.android.commonlib.http.intercepter.CacheInterceptor
+import co.bxvip.android.commonlib.http.intercepter.LogInterceptor
+import co.bxvip.android.commonlib.http.intercepter.RetryIntercepter
 import com.google.gson.Gson
 import okhttp3.Call
 import okhttp3.FormBody
@@ -40,6 +43,9 @@ class Ku private constructor() {
             if (client == null) {
                 synchronized(Ku::class) {
                     client = OkHttpClient.Builder()
+                            .addInterceptor(RetryIntercepter(2))//重试
+                            .addInterceptor(LogInterceptor())// 请求打印
+                            .addInterceptor(CacheInterceptor())
                             .connectTimeout(10, TimeUnit.SECONDS)
                             .writeTimeout(15, TimeUnit.SECONDS)
                             .build()
