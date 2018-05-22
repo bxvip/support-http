@@ -130,7 +130,7 @@ class RequestWrapper<T> {
                                     if (HttpManager._HttpManagerCallBack?._onResponse400000 != null) {
                                         HttpManager._HttpManagerCallBack?._onResponse400000?.invoke()
                                     }
-                                    HttpManager.handler?.post {
+                                    Ku.getKHander().post {
                                         _40000Page.invoke()
                                     }
                                     return
