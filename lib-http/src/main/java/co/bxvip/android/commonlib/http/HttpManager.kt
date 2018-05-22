@@ -1,16 +1,10 @@
 package co.bxvip.android.commonlib.http
 
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import co.bxvip.android.commonlib.http.ext.KLog
 import co.bxvip.android.commonlib.http.ext.Ku
-import co.bxvip.android.commonlib.http.intercepter.CacheInterceptor
-import co.bxvip.android.commonlib.http.intercepter.LogInterceptor
-import co.bxvip.android.commonlib.http.intercepter.RetryIntercepter
 import co.bxvip.android.commonlib.utils.CommonInit.ctx
-import com.google.gson.Gson
 import okhttp3.*
 import java.io.IOException
 
@@ -22,14 +16,7 @@ import java.io.IOException
 object HttpManager {
 
     private val TAG = "HttpManager"
-    var handler: Handler? = null
-    private var gson: Gson? = null
     var _HttpManagerCallBack: HttpManagerCallback? = null
-
-    init {
-        handler = Handler(Looper.getMainLooper())
-        gson = Gson()
-    }
 
     fun setHttpManagerCallBack(init: HttpManagerCallback.() -> Unit) {
         _HttpManagerCallBack = HttpManagerCallback().apply(init)
@@ -180,7 +167,7 @@ object HttpManager {
             }
             Ku.getKClient().newCall(request)?.enqueue(object : Callback {
                 override fun onFailure(call: Call?, e: IOException?) {
-                    handler?.post {
+                    Ku.getKHander().post {
                         try {
                             if (_HttpManagerCallBack != null && _HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
                             else {
@@ -198,12 +185,12 @@ object HttpManager {
                         if (response?.isSuccessful!!) {
                             val data = response.body()?.string()?.trim()
                             responseData = data!!
-                            val fromJsonB = gson?.fromJson(data, BaseStringResult::class.java)
+                            val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
                             if (40000 == fromJsonB?.msg) {
                                 if (_HttpManagerCallBack?._onResponse400000 != null) {
                                     _HttpManagerCallBack?._onResponse400000?.invoke()
                                 }
-                                handler?.post {
+                                Ku.getKHander().post {
                                     timeout()
                                 }
                                 return
@@ -219,12 +206,12 @@ object HttpManager {
 
                             // 返回原始数据判断
                             if (classOfT?.name?.equals("java.lang.String")!!) {
-                                handler?.post {
+                                Ku.getKHander().post {
                                     success(data as T)
                                 }
                             } else {
-                                val fromJson = gson?.fromJson(data, classOfT)
-                                handler?.post {
+                                val fromJson = Ku.getKGson().fromJson(data, classOfT)
+                                Ku.getKHander().post {
                                     success(fromJson)
                                 }
                             }
@@ -248,7 +235,7 @@ object HttpManager {
                             }
                         }
                     } catch (e: Exception) {
-                        handler?.post {
+                        Ku.getKHander().post {
                             fail(e.toString())
                         }
                         KLog.exceptionLog(call, e, responseData)
@@ -256,7 +243,7 @@ object HttpManager {
                 }
             })
         } catch (e: Exception) {
-            handler?.post {
+            Ku.getKHander().post {
                 fail(e.toString())
             }
             Log.d(TAG, "网络异常:$e")
