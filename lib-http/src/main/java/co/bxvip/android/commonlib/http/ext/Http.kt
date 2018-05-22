@@ -113,11 +113,11 @@ class RequestWrapper<T> {
                             }
                         }
                     } catch (e: Exception) {
-                        KLog.exceptionLog(call, e)
                         Ku.getKHander().post {
                             _fail(e)
                         }
                     }
+                    KLog.exceptionLog(call, e!!, "http onFailure()")
                 }
 
                 override fun onResponse(call: Call?, response: Response?) {
@@ -173,7 +173,7 @@ class RequestWrapper<T> {
                                             _fail(Exception("error:code < 200 or code > 300"))
                                         }
                                     }
-                                }else{
+                                } else {
                                     Ku.post {
                                         _fail(Exception("error:code < 200 or code > 300"))
                                     }

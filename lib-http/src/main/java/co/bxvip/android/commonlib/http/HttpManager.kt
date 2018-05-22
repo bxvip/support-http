@@ -173,11 +173,11 @@ object HttpManager {
                             else {
                                 Log.d(TAG, "网络异常:${e.toString()}")
                                 fail(e.toString())
-                                KLog.exceptionLog(call, e!!,"http onFailure")
                             }
                         } catch (e: Exception) {
-                            KLog.exceptionLog(call, e)
+                            fail(e.toString())
                         }
+                        KLog.exceptionLog(call, e!!, "http onFailure")
                     }
                 }
 
