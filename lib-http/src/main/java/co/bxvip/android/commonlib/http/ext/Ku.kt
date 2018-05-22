@@ -97,7 +97,7 @@ object KLog {
         try {
             val request = call?.request()
             if (HttpManager._HttpManagerCallBack?._onFailDoLog != null) {
-                HttpManager._HttpManagerCallBack?._onFailDoLog!!.invoke(request!!)
+                HttpManager._HttpManagerCallBack?._onFailDoLog!!.invoke(request!!, response + e.message)
             }
             Log.e(Ku.TAG, "\n")
             Log.e(Ku.TAG, "----------Start----异常-----")

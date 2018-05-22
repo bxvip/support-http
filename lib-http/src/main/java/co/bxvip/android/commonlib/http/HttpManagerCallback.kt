@@ -36,7 +36,7 @@ open class HttpManagerCallback {
     var _onSwitchUrl: (() -> Boolean)? = null
     var _onResponse400000: (() -> Unit)? = null
     var _onResponse450000: ((data: String) -> Unit)? = null
-    var _onFailDoLog: ((request: Request) -> Unit)? = null
+    var _onFailDoLog: ((request: Request,message:String) -> Unit)? = null
 
     @Synchronized
     fun onFormBodyBefore(listener: () -> HashMap<String, String>) {
@@ -73,7 +73,7 @@ open class HttpManagerCallback {
     }
 
     @Synchronized
-    fun onFailDoLog(listener: (request: Request) -> Unit) {
+    fun onFailDoLog(listener: (request: Request,message:String) -> Unit) {
         _onFailDoLog = listener
     }
 }
