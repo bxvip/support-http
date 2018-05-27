@@ -219,7 +219,7 @@ object HttpManager {
                         } else {
                             if (response.body() != null) {
                                 val string = response.body()!!.string()
-                                if (string.contains("<head>") && string.contains("<body>") && string.contains("<html>")) {
+                                if (string.contains("<head>") && string.contains("<body>") && string.contains("<html")) {
                                     // 切换线路
                                     if (BuildConfig.DEBUG)
                                         Log.e(TAG, "isSuccessful 为 false,请求失败")
