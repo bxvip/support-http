@@ -12,9 +12,14 @@ import com.google.gson.Gson
 import okhttp3.Call
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
+import java.net.ConnectException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * <pre>
@@ -86,7 +91,16 @@ class Ku private constructor() {
         }
     }
 
-
+    fun cancelCallByTag(tag: String) {
+        for (call in getKClient().dispatcher().queuedCalls()) {
+            if (call.request().tag() == tag)
+                call.cancel()
+        }
+        for (call in getKClient().dispatcher().runningCalls()) {
+            if (call.request().tag() == tag)
+                call.cancel()
+        }
+    }
 }
 
 object KLog {
@@ -143,5 +157,25 @@ object KLog {
             if (BuildConfig.DEBUG)
                 Log.d(Ku.TAG, e.toString())
         }
+    }
+}
+
+object UnifiedErrorUtil {
+    fun unifiedError(failCode: (String) -> Unit, e: Throwable) {
+        val message = when (e) {
+            is UnknownHostException, is TimeoutException -> {
+                "服务器开小差,请稍后重试！"
+            }
+            is ConnectException, is SocketTimeoutException, is SocketException -> {
+                "网络连接超时，请检查您的网络状态！"
+            }
+            is NumberFormatException, is IllegalArgumentException -> {
+                "未能请求到数据或者参数错误!"
+            }
+            else -> {
+                "未知异常，稍后重试！"
+            }
+        }
+        failCode.invoke(message)
     }
 }
