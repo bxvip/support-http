@@ -1,5 +1,6 @@
 package co.bxvip.android.commonlib.http
 
+import okhttp3.HttpUrl
 import okhttp3.Request
 
 /**
@@ -75,6 +76,19 @@ open class HttpManagerCallback {
     @Synchronized
     fun onFailDoLog(listener: (request: Request, message: String) -> Unit) {
         _onFailDoLog = listener
+    }
+}
+
+open class CountUrlCallBack {
+    var _onFailUrl: ((req: Request?) -> Unit)? = null
+    var _onSucceedUrl: ((req: Request?) -> Unit)? = null
+
+    fun onFailUrl(listener: (req: Request?) -> Unit) {
+        _onFailUrl = listener
+    }
+
+    fun onSucceedUrl(listener: (req: Request?) -> Unit) {
+        _onSucceedUrl = listener
     }
 }
 

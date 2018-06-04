@@ -3,7 +3,6 @@ package co.bxvip.android.commonlib.http.ext
 import android.util.Log
 import android.widget.Toast
 import co.bxvip.android.commonlib.http.BaseStringResult
-import co.bxvip.android.commonlib.http.BuildConfig
 import co.bxvip.android.commonlib.http.HttpManager
 import co.bxvip.android.commonlib.http.NetworkUtil
 import co.bxvip.android.commonlib.http.ext.Ku.Companion.TAG
@@ -12,6 +11,7 @@ import co.bxvip.tools.partials.partially1
 import okhttp3.*
 import okhttp3.FormBody
 import java.io.IOException
+import java.net.ConnectException
 
 
 /**
@@ -60,7 +60,9 @@ class RequestWrapper<T> {
     var method: String = "GET"
     var classOfT: Class<T> = String::class.java as Class<T>
     var useDefaultResultBean = true
+    var neadCommonParam = true
     var tag = ""
+    private var tryCount = 0
     protected val _params: MutableMap<String, String> = mutableMapOf()
     protected val _fileParams: MutableMap<String, String> = mutableMapOf()
     protected val _headers: MutableMap<String, String> = mutableMapOf()
@@ -92,10 +94,10 @@ class RequestWrapper<T> {
     }
 
     fun request(): Request? {
-        val req = when (method) { "get", "Get", "GET" -> Request.Builder().url(getGetUrl(fillUrl(url, subUrl), _params) { it.toQueryString() })
-            "post", "Post", "POST" -> Request.Builder().url(fillUrl(url, subUrl)).post(fillRequestForm(_params))
-            "put", "Put", "PUT" -> Request.Builder().url(fillUrl(url, subUrl)).put(fillRequestForm(_params))
-            "delete", "Delete", "DELETE" -> Request.Builder().url(fillUrl(url, subUrl)).delete(fillRequestForm(_params))
+        val req = when (method) { "get", "Get", "GET" -> Request.Builder().url(getGetUrl(fillUrl(url, subUrl), neadCommonParam, _params) { it.toQueryString() })
+            "post", "Post", "POST" -> Request.Builder().url(fillUrl(url, subUrl)).post(fillRequestForm(neadCommonParam, _params))
+            "put", "Put", "PUT" -> Request.Builder().url(fillUrl(url, subUrl)).put(fillRequestForm(neadCommonParam, _params))
+            "delete", "Delete", "DELETE" -> Request.Builder().url(fillUrl(url, subUrl)).delete(fillRequestForm(neadCommonParam, _params))
             else -> null
         }
         req?.headers(fillRequestHeader(_headers))
@@ -108,94 +110,91 @@ class RequestWrapper<T> {
     fun execute(request: Request) {
         Ku.getKThreadPool().execute {
             Ku.getKClient().newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call?, e: IOException?) {
+                override fun onFailure(call: Call?, e: IOException) {
                     if (!call!!.isCanceled) {
-                        try {
-                            if (HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!)
-                                execute(changeRequestUrl(request))
-                            else {
+                        Ku.getKThreadPool().execute {
+                            try {
+                                UnifiedErrorUtil.unifiedError(_fail, e, true, {
+                                    if (url.isNotEmpty() && HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!) {
+                                        tryCount++
+                                        if (tryCount <= Ku.maxTryCount) execute(request()!!) else {
+                                            UnifiedErrorUtil.unifiedError(_fail, e, false, {})
+                                        }
+                                    } else {
+                                        UnifiedErrorUtil.unifiedError(_fail, e, false, {})
+                                    }
+                                })
+                            } catch (e: Exception) {
                                 Ku.getKHander().post {
-                                    UnifiedErrorUtil.unifiedError(_fail, e!!)
+                                    UnifiedErrorUtil.unifiedError(_fail, e, false, {})
                                 }
                             }
-                        } catch (e: Exception) {
-                            Ku.getKHander().post {
-                                UnifiedErrorUtil.unifiedError(_fail, e)
-                            }
+                            KLog.exceptionLog(call, e, "http onFailure()")
                         }
-                        KLog.exceptionLog(call, e!!, "http onFailure()")
                     }
                 }
 
                 override fun onResponse(call: Call?, response: Response?) {
                     if (!call!!.isCanceled) {
-                        try {
-                            if (response?.isSuccessful!!) {
-                                val data = response.body()?.string()?.trim()
-                                if (useDefaultResultBean) {
-                                    val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
-                                    if (40000 == fromJsonB?.msg) {
-                                        if (HttpManager._HttpManagerCallBack?._onResponse400000 != null) {
-                                            HttpManager._HttpManagerCallBack?._onResponse400000?.invoke()
-                                        }
-                                        Ku.getKHander().post {
-                                            _40000Page.invoke()
-                                        }
-                                        return
-                                    } else if (45000 == fromJsonB?.msg) {
-                                        // 服务器正在维护
-                                        if (HttpManager._HttpManagerCallBack?._onResponse450000 != null) {
-                                            HttpManager._HttpManagerCallBack?._onResponse450000?.invoke(fromJsonB.data.toString())
-                                        }
-                                        return
-                                    }
-
-                                    // 返回原始数据判断
-
-                                    if (classOfT.name == "java.lang.String") {
-                                        Ku.post {
-                                            _success(data as T)
-                                        }
-                                    } else {
-                                        val fromJson = Ku.getKGson().fromJson(data, classOfT)
-                                        Ku.post {
-                                            _success(fromJson)
-                                        }
-                                    }
-                                } else {
-                                    Ku.post {
-                                        _success(Ku.getKGson().fromJson(data, classOfT))
-                                    }
-                                }
-                            } else {
-                                if (response.body() != null) {
-                                    val string = response.body()!!.string()
-                                    if (string.contains("<head>") && string.contains("<body>") && string.contains("<html")) {
-                                        // 切换线路
-                                        if (BuildConfig.DEBUG)
-                                            Log.e(TAG, "isSuccessful 为 false,请求失败")
-                                        if (HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!) execute(changeRequestUrl(request))
-                                        else {
+                        Ku.getKThreadPool().execute {
+                            try {
+                                if (response?.isSuccessful!!) {
+                                    if (HttpManager._CountUrlCallBack != null) HttpManager._CountUrlCallBack?._onSucceedUrl?.invoke(call.request())
+                                    val data = response.body()?.string()?.trim()
+                                    if (useDefaultResultBean) {
+                                        val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
+                                        if (40000 == fromJsonB?.msg) {
+                                            if (HttpManager._HttpManagerCallBack?._onResponse400000 != null) {
+                                                HttpManager._HttpManagerCallBack?._onResponse400000?.invoke()
+                                            }
+                                            Ku.getKHander().post {
+                                                _40000Page.invoke()
+                                            }
+                                        } else if (45000 == fromJsonB?.msg) {
+                                            // 服务器正在维护
+                                            if (HttpManager._HttpManagerCallBack?._onResponse450000 != null) {
+                                                HttpManager._HttpManagerCallBack?._onResponse450000?.invoke(Ku.getKGson().toJson(fromJsonB.data))
+                                            }
+                                        } else if (classOfT.name == "java.lang.String") {
                                             Ku.post {
-                                                UnifiedErrorUtil.unifiedError(_fail, Exception("error:code < 200 or code > 300"))
+                                                _success(data as T)
+                                            }
+                                        } else {
+                                            val fromJson = Ku.getKGson().fromJson(data, classOfT)
+                                            Ku.post {
+                                                _success(fromJson)
                                             }
                                         }
                                     } else {
                                         Ku.post {
-                                            UnifiedErrorUtil.unifiedError(_fail, Exception("error:code < 200 or code > 300"))
+                                            _success(Ku.getKGson().fromJson<T>(data, classOfT))
                                         }
                                     }
                                 } else {
-                                    Ku.post {
-                                        UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"))
+                                    if (response.body() != null) {
+                                        val string = response.body()!!.string()
+                                        if (string.contains("<head>") && string.contains("<body>") && string.contains("<html")) {
+                                            UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), true, {
+                                                if (url.isNotEmpty() && HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!) {
+                                                    tryCount++
+                                                    if (tryCount <= Ku.maxTryCount) execute(request()!!) else {
+                                                        UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
+                                                    }
+                                                } else {
+                                                    UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
+                                                }
+                                            })
+                                        } else {
+                                            UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
+                                        }
+                                    } else {
+                                        UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {})
                                     }
                                 }
+                            } catch (e: Exception) {
+                                UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {})
+                                KLog.exceptionLog(call, e)
                             }
-                        } catch (e: Exception) {
-                            Ku.post {
-                                UnifiedErrorUtil.unifiedError(_fail, e)
-                            }
-                            KLog.exceptionLog(call, e)
                         }
                     }
                 }
@@ -203,15 +202,15 @@ class RequestWrapper<T> {
         }
     }
 
-    private fun changeRequestUrl(request: Request): Request {
-        val body = request.body()
-        val headers = request.headers()
-        val method = request.method()
-        return request.newBuilder().url(request.url()).method(method, body).headers(headers).tag(request.tag()).build()
-    }
-
-
-    private fun getGetUrl(url: String, params: MutableMap<String, String>, toQueryString: (map: Map<String, String>) -> String): String {
+    private fun getGetUrl(url: String, needCommonParam: Boolean = true, params: MutableMap<String, String>, toQueryString: (map: Map<String, String>) -> String): String {
+        if (needCommonParam && HttpManager._HttpManagerCallBack?._onFormBodyBefore != null) {
+            val hashMap = HttpManager._HttpManagerCallBack?._onFormBodyBefore?.invoke()
+            if (hashMap != null) {
+                for ((k, v) in hashMap) {
+                    params[k] = v
+                }
+            }
+        }
         return if (params.isEmpty()) url else "$url?${toQueryString(params)}"
     }
 
@@ -241,10 +240,10 @@ private fun fillUrl(url: String = "", subUrl: String = ""): String {
 /**
  * 构造 formBody
  */
-private fun fillRequestForm(params: MutableMap<String, String>?): FormBody {
+private fun fillRequestForm(needCommonParam: Boolean = true, params: MutableMap<String, String>?): FormBody {
     val builder = FormBody.Builder()
     params?.map { builder.add(it.key, it.value) }
-    if (HttpManager._HttpManagerCallBack?._onFormBodyBefore != null) {
+    if (needCommonParam && HttpManager._HttpManagerCallBack?._onFormBodyBefore != null) {
         val hashMap = HttpManager._HttpManagerCallBack?._onFormBodyBefore?.invoke()
         if (hashMap != null) {
             for ((k, v) in hashMap) {

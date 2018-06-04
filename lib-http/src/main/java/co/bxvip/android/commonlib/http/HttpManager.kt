@@ -17,6 +17,11 @@ object HttpManager {
 
     private val TAG = "HttpManager"
     var _HttpManagerCallBack: HttpManagerCallback? = null
+    var _CountUrlCallBack: CountUrlCallBack? = null
+
+    fun setCountUrlCallBack(init: CountUrlCallBack.() -> Unit) {
+        _CountUrlCallBack = CountUrlCallBack().apply(init)
+    }
 
     fun setHttpManagerCallBack(init: HttpManagerCallback.() -> Unit) {
         _HttpManagerCallBack = HttpManagerCallback().apply(init)
@@ -167,6 +172,7 @@ object HttpManager {
             }
             Ku.getKClient().newCall(request)?.enqueue(object : Callback {
                 override fun onFailure(call: Call?, e: IOException?) {
+                    if (_CountUrlCallBack != null) _CountUrlCallBack?._onFailUrl?.invoke(call?.request())
                     Ku.getKHander().post {
                         try {
                             if (_HttpManagerCallBack != null && _HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
@@ -184,6 +190,7 @@ object HttpManager {
                 override fun onResponse(call: Call?, response: Response?) {
                     try {
                         if (response?.isSuccessful!!) {
+                            if (_CountUrlCallBack != null) _CountUrlCallBack?._onSucceedUrl?.invoke(call?.request())
                             val data = response.body()?.string()?.trim()
                             responseData = data!!
                             val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
