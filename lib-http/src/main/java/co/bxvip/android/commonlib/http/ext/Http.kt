@@ -2,7 +2,6 @@ package co.bxvip.android.commonlib.http.ext
 
 import android.util.Log
 import android.widget.Toast
-import co.bxvip.android.commonlib.db.ext.DBU.Companion.daoKeyValue
 import co.bxvip.android.commonlib.http.BaseStringResult
 import co.bxvip.android.commonlib.http.HttpManager
 import co.bxvip.android.commonlib.http.NetworkUtil
