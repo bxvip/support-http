@@ -40,7 +40,7 @@ class Ku private constructor() {
         @Volatile
         var client: OkHttpClient? = null
         @Volatile
-        var maxTryCount = 5
+        var maxTryCount = 3
         @Volatile
         var threadPool: Executor? = null
 
@@ -53,9 +53,10 @@ class Ku private constructor() {
             if (client == null) {
                 synchronized(Ku::class) {
                     client = OkHttpClient.Builder()
-                            .addInterceptor(RetryIntercepter(2))//重试
+//                            .addInterceptor(RetryIntercepter(2))//重试
                             .addInterceptor(LogInterceptor())// 请求打印
                             .addInterceptor(CacheInterceptor())
+                            .retryOnConnectionFailure(false)
                             .connectTimeout(10, TimeUnit.SECONDS)
                             .writeTimeout(15, TimeUnit.SECONDS)
                             .build()
@@ -112,11 +113,11 @@ object KLog {
     /**
      * 异常打印
      */
-    fun exceptionLog(call: Call?, e: Exception, response: String = "") {
+    fun exceptionLog(call: Call?, e: Exception, response: String = "", level: Int = -1) {
         try {
             val request = call?.request()
             if (HttpManager._HttpManagerCallBack?._onFailDoLog != null) {
-                HttpManager._HttpManagerCallBack?._onFailDoLog!!.invoke(request!!, response + e.message)
+                HttpManager._HttpManagerCallBack?._onFailDoLog!!.invoke(request!!, response + e.message, level)
             }
             Log.e(Ku.TAG, "\n")
             Log.e(Ku.TAG, "----------Start----异常-----")
@@ -180,9 +181,17 @@ object UnifiedErrorUtil {
                     }
                 }
             }
-            is NumberFormatException, is IllegalArgumentException, is JsonSyntaxException, is IOException -> {
+            is NumberFormatException, is IllegalArgumentException, is IOException -> {
                 Ku.post {
                     failCode.invoke("未能请求到数据或者参数错误!")
+                }
+            }
+            is JsonSyntaxException -> {
+                if (needTry)
+                    tryCode.invoke() else {
+                    Ku.post {
+                        failCode.invoke("连接超时或者连接异常!")
+                    }
                 }
             }
             else -> {

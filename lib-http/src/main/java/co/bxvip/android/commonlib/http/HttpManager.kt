@@ -183,7 +183,7 @@ object HttpManager {
                         } catch (e: Exception) {
                             fail(e.toString())
                         }
-                        KLog.exceptionLog(call, e!!, "http onFailure")
+                        KLog.exceptionLog(call, e!!, "http onFailure", 1)
                     }
                 }
 
@@ -230,11 +230,11 @@ object HttpManager {
                                     // 切换线路
                                     if (BuildConfig.DEBUG)
                                         Log.e(TAG, "isSuccessful 为 false,请求失败")
-                                    KLog.exceptionLog(call, java.lang.Exception("error:code < 200 or code > 300"))
                                     if (_HttpManagerCallBack?._onSwitchUrl?.invoke()!!) commonRequest(formBody, classOfT, success, fail, timeout, maintained, url, secondUrl, false, headers)
                                     else {
                                         fail("error:code < 200 or code > 300")
                                     }
+                                    KLog.exceptionLog(call, java.lang.Exception("error:code < 200 or code > 300"),responseData, level = 2)
                                 } else {
                                     fail("请求失败!")
                                 }
@@ -246,7 +246,7 @@ object HttpManager {
                         Ku.getKHander().post {
                             fail(e.toString())
                         }
-                        KLog.exceptionLog(call, e, responseData)
+                        KLog.exceptionLog(call, e, responseData, 1)
                     }
                 }
             })

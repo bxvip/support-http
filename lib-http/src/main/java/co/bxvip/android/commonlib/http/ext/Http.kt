@@ -2,6 +2,7 @@ package co.bxvip.android.commonlib.http.ext
 
 import android.util.Log
 import android.widget.Toast
+import co.bxvip.android.commonlib.db.ext.DBU.Companion.daoKeyValue
 import co.bxvip.android.commonlib.http.BaseStringResult
 import co.bxvip.android.commonlib.http.HttpManager
 import co.bxvip.android.commonlib.http.NetworkUtil
@@ -54,13 +55,20 @@ fun <T> http(init: RequestWrapper<T>.() -> Unit) {
     wrap.execute(request)
 }
 
-class RequestWrapper<T> {
+val pairs = fun(map: MutableMap<String, String>, makePairs: RequestPairs.() -> Unit) {
+    val requestPair = RequestPairs()
+    requestPair.makePairs()
+    map.putAll(requestPair.pairs)
+}
+
+open class RequestWrapper<T> {
     var url = ""
     var subUrl = ""
     var method: String = "GET"
     var classOfT: Class<T> = String::class.java as Class<T>
     var useDefaultResultBean = true
-    var neadCommonParam = true
+    var needCommonParam = true
+    var needTry = true
     var tag = ""
     private var tryCount = 0
     protected val _params: MutableMap<String, String> = mutableMapOf()
@@ -70,12 +78,6 @@ class RequestWrapper<T> {
     internal var _success: (T) -> Unit = {}
     internal var _fail: (String) -> Unit = { }
     internal var _40000Page: () -> Unit = {}
-
-    private val pairs = fun(map: MutableMap<String, String>, makePairs: RequestPairs.() -> Unit) {
-        val requestPair = RequestPairs()
-        requestPair.makePairs()
-        map.putAll(requestPair.pairs)
-    }
 
     val body = pairs.partially1(_params)
     val headers = pairs.partially1(_headers)
@@ -94,10 +96,10 @@ class RequestWrapper<T> {
     }
 
     fun request(): Request? {
-        val req = when (method) { "get", "Get", "GET" -> Request.Builder().url(getGetUrl(fillUrl(url, subUrl), neadCommonParam, _params) { it.toQueryString() })
-            "post", "Post", "POST" -> Request.Builder().url(fillUrl(url, subUrl)).post(fillRequestForm(neadCommonParam, _params))
-            "put", "Put", "PUT" -> Request.Builder().url(fillUrl(url, subUrl)).put(fillRequestForm(neadCommonParam, _params))
-            "delete", "Delete", "DELETE" -> Request.Builder().url(fillUrl(url, subUrl)).delete(fillRequestForm(neadCommonParam, _params))
+        val req = when (method) { "get", "Get", "GET" -> Request.Builder().url(getGetUrl(fillUrl(url, subUrl), needCommonParam, _params) { it.toQueryString() })
+            "post", "Post", "POST" -> Request.Builder().url(fillUrl(url, subUrl)).post(fillRequestForm(needCommonParam, _params))
+            "put", "Put", "PUT" -> Request.Builder().url(fillUrl(url, subUrl)).put(fillRequestForm(needCommonParam, _params))
+            "delete", "Delete", "DELETE" -> Request.Builder().url(fillUrl(url, subUrl)).delete(fillRequestForm(needCommonParam, _params))
             else -> null
         }
         req?.headers(fillRequestHeader(_headers))
@@ -115,7 +117,8 @@ class RequestWrapper<T> {
                         Ku.getKThreadPool().execute {
                             try {
                                 UnifiedErrorUtil.unifiedError(_fail, e, true, {
-                                    if (url.isNotEmpty() && HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!) {
+                                    val changeSucceed = HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!
+                                    if (needTry && url.isNotEmpty() && changeSucceed) {
                                         tryCount++
                                         if (tryCount <= Ku.maxTryCount) execute(request()!!) else {
                                             UnifiedErrorUtil.unifiedError(_fail, e, false, {})
@@ -129,7 +132,7 @@ class RequestWrapper<T> {
                                     UnifiedErrorUtil.unifiedError(_fail, e, false, {})
                                 }
                             }
-                            KLog.exceptionLog(call, e, "http onFailure()")
+                            KLog.exceptionLog(call, e, "http onFailure()", 1)
                         }
                     }
                 }
@@ -137,63 +140,70 @@ class RequestWrapper<T> {
                 override fun onResponse(call: Call?, response: Response?) {
                     if (!call!!.isCanceled) {
                         Ku.getKThreadPool().execute {
+                            val retryCode: (Exception) -> Unit = {
+                                val changeSucceed = HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!
+                                if (needTry && url.isNotEmpty() && changeSucceed) {
+                                    tryCount++
+                                    if (tryCount <= Ku.maxTryCount) execute(request()!!) else {
+                                        UnifiedErrorUtil.unifiedError(_fail, it, false, {})
+                                    }
+                                } else {
+                                    UnifiedErrorUtil.unifiedError(_fail, it, false, {})
+                                }
+                            }
                             try {
                                 if (response?.isSuccessful!!) {
                                     if (HttpManager._CountUrlCallBack != null) HttpManager._CountUrlCallBack?._onSucceedUrl?.invoke(call.request())
                                     val data = response.body()?.string()?.trim()
-                                    if (useDefaultResultBean) {
-                                        val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
-                                        if (40000 == fromJsonB?.msg) {
-                                            if (HttpManager._HttpManagerCallBack?._onResponse400000 != null) {
-                                                HttpManager._HttpManagerCallBack?._onResponse400000?.invoke()
-                                            }
-                                            Ku.getKHander().post {
-                                                _40000Page.invoke()
-                                            }
-                                        } else if (45000 == fromJsonB?.msg) {
-                                            // 服务器正在维护
-                                            if (HttpManager._HttpManagerCallBack?._onResponse450000 != null) {
-                                                HttpManager._HttpManagerCallBack?._onResponse450000?.invoke(Ku.getKGson().toJson(fromJsonB.data))
-                                            }
-                                        } else if (classOfT.name == "java.lang.String") {
-                                            Ku.post {
-                                                _success(data as T)
-                                            }
-                                        } else {
-                                            val fromJson = Ku.getKGson().fromJson(data, classOfT)
-                                            Ku.post {
-                                                _success(fromJson)
+                                    when {
+                                        useDefaultResultBean -> {
+                                            val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
+                                            when {
+                                                40000 == fromJsonB?.msg -> Ku.getKHander().post {
+                                                    if (HttpManager._HttpManagerCallBack?._onResponse400000 != null) {
+                                                        HttpManager._HttpManagerCallBack?._onResponse400000?.invoke()
+                                                    }
+                                                    _40000Page.invoke()
+                                                }
+                                                45000 == fromJsonB?.msg -> Ku.getKHander().post {
+                                                    // 服务器正在维护
+                                                    if (HttpManager._HttpManagerCallBack?._onResponse450000 != null) {
+                                                        HttpManager._HttpManagerCallBack?._onResponse450000?.invoke(Ku.getKGson().toJson(fromJsonB.data))
+                                                    }
+                                                }
+                                                classOfT.name == "java.lang.String" -> Ku.post {
+                                                    _success(data as T)
+                                                }
+                                                else -> {
+                                                    val fromJson = Ku.getKGson().fromJson(data, classOfT)
+                                                    Ku.post {
+                                                        _success(fromJson)
+                                                    }
+                                                }
                                             }
                                         }
-                                    } else {
-                                        Ku.post {
+                                        else -> Ku.post {
                                             _success(Ku.getKGson().fromJson<T>(data, classOfT))
                                         }
                                     }
                                 } else {
-                                    if (response.body() != null) {
-                                        val string = response.body()!!.string()
-                                        if (string.contains("<head>") && string.contains("<body>") && string.contains("<html")) {
-                                            UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), true, {
-                                                if (url.isNotEmpty() && HttpManager._HttpManagerCallBack != null && HttpManager._HttpManagerCallBack?._onSwitchUrl?.invoke()!!) {
-                                                    tryCount++
-                                                    if (tryCount <= Ku.maxTryCount) execute(request()!!) else {
-                                                        UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
-                                                    }
-                                                } else {
-                                                    UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
-                                                }
-                                            })
-                                        } else {
-                                            UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
+                                    when {
+                                        response.body() != null -> {
+                                            val string = response.body()!!.string()
+                                            when {
+                                                string.contains("<head>") && string.contains("<body") && string.contains("<html") ->
+                                                    UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), true, { retryCode.invoke(ConnectException("error:code < 200 or code > 300")) })
+                                                else -> UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
+                                            }
                                         }
-                                    } else {
-                                        UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {})
+                                        else -> UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {})
                                     }
                                 }
                             } catch (e: Exception) {
-                                UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {})
-                                KLog.exceptionLog(call, e)
+                                UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {
+                                    retryCode.invoke(e)
+                                })
+                                KLog.exceptionLog(call, e, level = 1)
                             }
                         }
                     }
