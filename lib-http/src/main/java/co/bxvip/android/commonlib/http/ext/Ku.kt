@@ -95,17 +95,6 @@ class Ku private constructor() {
             return mGson!!
         }
     }
-
-    fun cancelCallByTag(tag: String) {
-        for (call in getKClient().dispatcher().queuedCalls()) {
-            if (call.request().tag() == tag)
-                call.cancel()
-        }
-        for (call in getKClient().dispatcher().runningCalls()) {
-            if (call.request().tag() == tag)
-                call.cancel()
-        }
-    }
 }
 
 object KLog {

@@ -54,6 +54,20 @@ fun <T> http(init: RequestWrapper<T>.() -> Unit) {
     wrap.execute(request)
 }
 
+/**
+ * 根据tag销毁请求
+ */
+fun cancelCallByTag(tag: String) {
+    for (call in Ku.getKClient().dispatcher().queuedCalls()) {
+        if (call.request().tag() == tag)
+            call.cancel()
+    }
+    for (call in Ku.getKClient().dispatcher().runningCalls()) {
+        if (call.request().tag() == tag)
+            call.cancel()
+    }
+}
+
 val pairs = fun(map: MutableMap<String, String>, makePairs: RequestPairs.() -> Unit) {
     val requestPair = RequestPairs()
     requestPair.makePairs()
