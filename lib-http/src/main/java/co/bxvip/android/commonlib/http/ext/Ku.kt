@@ -7,7 +7,6 @@ import co.bxvip.android.commonlib.http.BuildConfig
 import co.bxvip.android.commonlib.http.HttpManager
 import co.bxvip.android.commonlib.http.intercepter.CacheInterceptor
 import co.bxvip.android.commonlib.http.intercepter.LogInterceptor
-import co.bxvip.android.commonlib.http.intercepter.RetryIntercepter
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import okhttp3.Call
