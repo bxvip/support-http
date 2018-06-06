@@ -204,7 +204,9 @@ open class RequestWrapper<T> {
                                         response.body() != null -> {
                                             val string = response.body()!!.string()
                                             when {
-                                                string.contains("<head>") && string.contains("<body") && string.contains("<html") ->
+                                                string.contains("<html") ||
+                                                        string.contains("<body") ||
+                                                        string.contains("<head") ->
                                                     UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), true, { retryCode.invoke(ConnectException("error:code < 200 or code > 300")) })
                                                 else -> UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
                                             }
