@@ -8,6 +8,7 @@ import co.bxvip.android.commonlib.http.NetworkUtil
 import co.bxvip.android.commonlib.http.ext.Ku.Companion.TAG
 import co.bxvip.android.commonlib.utils.CommonInit
 import co.bxvip.tools.partials.partially1
+import com.google.gson.JsonSyntaxException
 import okhttp3.*
 import okhttp3.FormBody
 import java.io.IOException
@@ -65,6 +66,18 @@ fun cancelCallByTag(tag: String) {
     for (call in Ku.getKClient().dispatcher().runningCalls()) {
         if (call.request().tag() == tag)
             call.cancel()
+    }
+}
+
+/**
+ * 取消所有的tag
+ */
+fun cancelAllHttpCall() {
+    for (call in Ku.getKClient().dispatcher().queuedCalls()) {
+        call.cancel()
+    }
+    for (call in Ku.getKClient().dispatcher().runningCalls()) {
+        call.cancel()
     }
 }
 
@@ -170,6 +183,7 @@ open class RequestWrapper<T> {
                                     val data = response.body()?.string()?.trim()
                                     when {
                                         useDefaultResultBean -> {
+
                                             val fromJsonB = Ku.getKGson().fromJson(data, BaseStringResult::class.java)
                                             when {
                                                 40000 == fromJsonB?.msg -> Ku.getKHander().post {
@@ -207,7 +221,7 @@ open class RequestWrapper<T> {
                                                 string.contains("<html") ||
                                                         string.contains("<body") ||
                                                         string.contains("<head") ->
-                                                    UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), true, { retryCode.invoke(ConnectException("error:code < 200 or code > 300")) })
+                                                    UnifiedErrorUtil.unifiedError(_fail, JsonSyntaxException("非json数据"), true, { retryCode.invoke(ConnectException("error:code < 200 or code > 300")) })
                                                 else -> UnifiedErrorUtil.unifiedError(_fail, ConnectException("error:code < 200 or code > 300"), false, {})
                                             }
                                         }
@@ -215,7 +229,7 @@ open class RequestWrapper<T> {
                                     }
                                 }
                             } catch (e: Exception) {
-                                UnifiedErrorUtil.unifiedError(_fail, Exception("请求失败!"), false, {
+                                UnifiedErrorUtil.unifiedError(_fail, e, true, {
                                     retryCode.invoke(e)
                                 })
                                 KLog.exceptionLog(call, e, level = 1)
