@@ -56,8 +56,8 @@ class Ku private constructor() {
                             .addInterceptor(LogInterceptor())// 请求打印
                             .addInterceptor(CacheInterceptor())
                             .retryOnConnectionFailure(false)
-                            .connectTimeout(10, TimeUnit.SECONDS)
-                            .writeTimeout(15, TimeUnit.SECONDS)
+                            .connectTimeout(30, TimeUnit.SECONDS)
+                            .writeTimeout(30, TimeUnit.SECONDS)
                             .build()
                 }
             }
