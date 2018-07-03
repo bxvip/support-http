@@ -149,10 +149,9 @@ class NetworkUtil {
                  */
 
         fun getNetworkType(context: Context): String {
+            val info = getActiveNetworkInfo(context) ?: return "unknow"
             var netType = "unknow"
-            val info = getActiveNetworkInfo(context)
             if (info.isAvailable) {
-
                 when {
                     info.type == ConnectivityManager.TYPE_WIFI -> netType = "wifi"
                     info.type == ConnectivityManager.TYPE_MOBILE -> when (info.subtype) {
@@ -191,11 +190,11 @@ class NetworkUtil {
          * @param context 上下文
          * @return NetworkInfo
          */
-        private fun getActiveNetworkInfo(context: Context): NetworkInfo {
-            val cm = context
-                    .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        private fun getActiveNetworkInfo(context: Context): NetworkInfo? {
+            val systemService = context.getSystemService(Context.CONNECTIVITY_SERVICE)
+                    ?: return null
+            val cm = systemService as ConnectivityManager
             return cm.activeNetworkInfo
         }
-
     }
 }

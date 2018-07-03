@@ -92,3 +92,11 @@ open class CountUrlCallBack {
     }
 }
 
+open class EnCryptCallInvoke {
+    var _cryptCode: (() -> String)? = null
+
+    fun onCrypt(listener: () -> String) {
+        _cryptCode = listener
+    }
+}
+

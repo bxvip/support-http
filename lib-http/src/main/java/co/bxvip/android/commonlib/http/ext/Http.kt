@@ -42,14 +42,18 @@ import java.net.ConnectException
 fun <T> http(init: RequestWrapper<T>.() -> Unit) {
     if (!NetworkUtil.isNetworkAvailable(CommonInit.ctx)) {
         Log.d(TAG, "请连接网络....")
-        Toast.makeText(CommonInit.ctx, "请连接网络....", Toast.LENGTH_SHORT).show()
+        Ku.post {
+            Toast.makeText(CommonInit.ctx, "请连接网络....", Toast.LENGTH_SHORT).show()
+        }
         return
     }
     val wrap = RequestWrapper<T>()
     wrap.init()
     val request = wrap.request()
     if (request == null) {
-        Toast.makeText(CommonInit.ctx, "不支持该请求方式....", Toast.LENGTH_SHORT).show()
+        Ku.post {
+            Toast.makeText(CommonInit.ctx, "不支持该请求方式....", Toast.LENGTH_SHORT).show()
+        }
         return
     }
     wrap.execute(request)
@@ -94,6 +98,7 @@ open class RequestWrapper<T> {
     var classOfT: Class<T> = String::class.java as Class<T>
     var useDefaultResultBean = true
     var needCommonParam = true
+    var needEncrypt = true
     var needTry = true
     var tag = ""
     private var tryCount = 0
