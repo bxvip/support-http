@@ -1,6 +1,5 @@
 package co.bxvip.android.commonlib.http
 
-import okhttp3.HttpUrl
 import okhttp3.Request
 
 /**
@@ -91,12 +90,3 @@ open class CountUrlCallBack {
         _onSucceedUrl = listener
     }
 }
-
-open class EnCryptCallInvoke {
-    var _cryptCode: (() -> String)? = null
-
-    fun onCrypt(listener: () -> String) {
-        _cryptCode = listener
-    }
-}
-
